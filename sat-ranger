@@ -1,0 +1,545 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Sat Ranger</title>
+
+  <style>
+      body {
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          text-shadow: 0px 0px 30px #ff9900;
+          color: #ff9900;
+          background: linear-gradient(61.8deg, #250025, #361001, #250025);
+      }
+
+      hr {
+          opacity: 0.2;
+          padding: 0;
+          margin: 2px;
+          color: #fff;
+      }
+
+      .icon {
+          font-size: 18px;
+          color: #fff;
+          opacity: 0.8;
+      }
+
+      .singleSat {
+          transition: 0.5s;
+          cursor: pointer;
+      }
+
+      .singleSat:hover {
+          opacity: 0.8;
+      }
+
+      .satNum {
+          color: #FFD700;
+          font-size: 12px;
+          pointer-events: none;
+          padding: 2px;
+          border: 1px solid #855408;
+          border-radius: 4px;
+      }
+
+      .satNum:hover {
+          opacity: 0.5;
+      }
+
+      textarea {
+          height: 100%;
+          color: #000;
+          margin: 4px;
+
+      }
+
+      button {
+          width: 100px;
+          margin: 4px;
+      }
+
+      .container {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-start;
+          align-items: flex-start;
+          width: fit-content;
+          max-height: calc(100vh - 90px);
+          overflow-y: auto;
+          padding: 0px 10px 10px 10px;
+          padding-bottom: 100px;
+      }
+
+
+      .range:hover {
+          border: 1px solid #da942b;
+      }
+
+
+      .range:hover .smallText {
+          opacity: 0.5;
+      }
+
+      .range:hover .mainRange {
+          opacity: 0.75;
+      }
+
+      .title {
+          padding: 4px;
+          font-size: 24px;
+          color: #ff9900;
+          display: flex;
+          width: 100%;
+          white-space: nowrap;
+      }
+
+      .subtitle {
+          padding: 4px;
+          font-size: 12px;
+          color: #ff9900;
+          opacity: 0.7;
+      }
+
+      .range {
+          border: 1px solid #855408;
+          border-radius: 4px;
+          padding: 8px;
+          margin: 3px;
+          width: fit-content;
+          height: 100%;
+          background: linear-gradient(61.8deg, #250025, #180903, #250025);
+      }
+
+
+      .namesDropdown {
+          background: linear-gradient(61.8deg, #250025, #180903, #250025);
+          margin-top: 4px;
+          padding: 4px;
+          max-height: 200px;
+          overflow-y: scroll;
+          width: 140px;
+          z-index: 10;
+          opacity: 0.9;
+          font-size: 18px;
+      }
+
+      .namesDropdown:hover {
+          opacity: 1;
+      }
+
+      .smallText {
+          color: #ffe000;
+          opacity: 0.3;
+          margin-left: 4px;
+          font-size: smaller;
+          transition: 0.2s;
+      }
+
+      .prefix {
+          color: #ff9900;
+          font-weight: bold;
+          font-size: 18px;
+      }
+
+      .rangeBracket {
+          color: #ff9900;
+          cursor: pointer;
+          margin-left: 1px;
+          font-weight: normal;
+          opacity: 0.85;
+          font-size: 18px;
+      }
+
+      .mainRange {
+          opacity: 0.6;
+          border-radius: 4px;
+          width: fit-content;
+          color: #ff9900;
+          font-size: 12px;
+      }
+
+      .rangeEnd {
+          color: #ff9900;
+          font-weight: normal;
+          font-size: 16px;
+          opacity: 0.7;
+          text-shadow: 1px 1px 10px #ffea00;
+      }
+
+      .nameRow {
+          display: flex;
+          flex-direction: row;
+          transition: 0.4s;
+          cursor: pointer;
+      }
+
+
+      .nameRow:hover {
+          opacity: 0.8;
+          letter-spacing: 0.3px;
+      }
+
+      .quest {
+          font-size: 16px;
+          margin-right: 12px;
+          margin-top: 4px;
+          margin-left: auto;
+          opacity: 0.5;
+          transition: 0.5s;
+          cursor: default;
+      }
+
+      .quest:hover {
+          opacity: 1;
+      }
+
+
+      .quest:hover .questText {
+          opacity: 1;
+          letter-spacing: 1px;
+      }
+
+      .questText {
+          font-size: 14px;
+          opacity: 0;
+          transition: 3s;
+          margin-right: 12px;
+      }
+  </style>
+</head>
+
+<body>
+<div id="root"></div>
+
+<script type="module">
+    import '/content/faa7b9b0b7884360f6c2b34693855a0d60df5f344727c72e3691a80f84ec6a81i0'
+
+    const RangeComponent = ({range, data, totalCount}) => {
+        const [showDropdownPrefix, setShowDropdownPrefix] = React.useState(null);
+        const [dropdownNames, setDropdownNames] = React.useState([]);
+        const [selectedName, setSelectedName] = React.useState(null);
+        const [namesLoadedCount, setNamesLoadedCount] = React.useState(100);
+
+        const [dropdownStartChar, setDropdownStartChar] = React.useState('');
+        const [dropdownEndChar, setDropdownEndChar] = React.useState('');
+
+        const toggleDropdown = useCallback((prefix, startChar, endChar, event) => {
+            if (showDropdownPrefix === prefix) {
+                setShowDropdownPrefix(null);
+            } else {
+                setDropdownStartChar(startChar);
+                setDropdownEndChar(endChar);
+                let names = generateNames(prefix, startChar, endChar).slice(0, namesLoadedCount);
+                setDropdownNames(names);
+                setShowDropdownPrefix(prefix);
+            }
+        }, [showDropdownPrefix, namesLoadedCount]);
+
+        const loadMoreNames = () => {
+            const newCount = namesLoadedCount + 100;
+            setNamesLoadedCount(newCount);
+            const newNames = generateNames(showDropdownPrefix, dropdownStartChar, dropdownEndChar).slice(0, newCount);
+            setDropdownNames(newNames);
+        }
+
+        const onDropdownScroll = (e) => {
+            const dropdown = e.target;
+            if (dropdown.scrollHeight - dropdown.scrollTop === dropdown.clientHeight) {
+                loadMoreNames();
+            }
+        }
+
+        return html`
+          <div class="range">
+            <div class="mainRange">${range} <span
+                style=${{opacity: 0.7, fontSize: 'smaller'}}>${'x' + totalCount}</span></div>
+            <hr/>
+            ${data.map((name, idx) => {
+              if (name.includes('[') && name.includes(']')) {
+                let prefix = name.split('[')[0];
+                let startChar = name.split('[')[1].split('-')[0];
+                let endChar = name.split('-')[1].split(']')[0];
+                let totalCountMatch = name.match(/\((\d+)\)$/); // Extract the count using a regex, if it exists
+                let totalCount = totalCountMatch ? parseInt(totalCountMatch[1], 10) : null;
+
+                if (totalCount === 1) {
+                  return null;
+                }
+
+                let displayRange;
+                if (startChar === endChar) {
+                  displayRange = `${startChar}`;
+                } else {
+                  displayRange = `${startChar}-${endChar}`;
+                }
+
+                return html`
+                  <div class="nameRow" onPointerDown=${(e) => {
+                    toggleDropdown(prefix, startChar, endChar, e);
+                    e.stopPropagation();
+                  }}>
+                    <span class="prefix">${prefix}</span>
+                    <span class="rangeBracket">${displayRange.split('-')[0]}<span
+                        class="rangeEnd">${'-' + displayRange.split('-')[1]}</span></span>
+                    <span class="smallText">${'x' + (totalCount ? totalCount : '')}</span>
+                  </div>
+
+                  <div class="namesDropdown" onScroll=${onDropdownScroll}
+                       style=${{display: showDropdownPrefix === prefix ? 'block' : 'none'}}>
+                    ${dropdownNames.map(n => html`
+                      <div class="singleSat" onPointerDown=${(e) => {
+                        if (selectedName === n) {
+                          setSelectedName('')
+                        } else {
+                          setSelectedName(n);
+                        }
+
+                        e.stopPropagation();
+                      }}>
+                        <span class="icon">${'◈ '}</span>${n}
+
+                      </div>
+                      ${selectedName === n && html`
+                        <div class="satNum" onPointerDown=${e => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                        }}>
+                          ${'sat # ' + nameToNum(n)}
+                        </div>
+                      `}
+                    `)}
+                  </div>
+                `;
+              }
+            })}
+          </div>
+        `;
+    }
+
+    const SatRangeComponent = () => {
+        const [inputValue, setInputValue] = React.useState('');
+        const [namespaces, setNamespaces] = React.useState(null);
+
+        function handleInputChange(event) {
+            setInputValue(event.target.value);
+        }
+
+        function handleSubmit() {
+            getNamespacesForString(inputValue, (updatedNamespaces) => {
+                setNamespaces(prevNamespaces => ({
+                    ...prevNamespaces,
+                    ...updatedNamespaces
+                }));
+                document.querySelector('.title').style.fontSize = '14px'
+                document.querySelector('.subtitle').style.display = 'none'
+                document.querySelector('textarea').style.height = '20px'
+            });
+        }
+
+
+        return html`
+          <div class="title">🎯 Sat Ranger
+            <div class="quest"><span class="questText">built by <b>bop.xbt</b></span>💚</div>
+          </div>
+          <div class="subtitle">- copy + paste any text containing satoshi number ranges to view all of the possible sat
+            names
+          </div>
+          <textarea value=${inputValue} placeholder=${'paste bulk text here..'} onChange=${handleInputChange}></textarea>
+          <br/>
+          <button onClick=${handleSubmit}>search</button>
+
+
+          <div class="container">
+            ${namespaces && Object.entries(namespaces).map(([range, data]) => {
+            return html`
+                <${RangeComponent} range=${range} data=${data.data} totalCount=${data.totalCount}/>`;
+        })}
+          </div>
+        `;
+    }
+
+    const App = function () {
+        return (html`
+          <div>
+            <${SatRangeComponent}/>
+          </div>
+        `)
+    }
+
+    ReactDOM.render(html`
+      <${App}/>`, document.getElementById('root'))
+
+</script>
+</body>
+
+<script>
+
+    const SUPPLY = 2099999997690000;
+
+    function satNumberToName(num) {
+        let x = SUPPLY - num;
+        let name = [];
+
+        while (x > 0) {
+            let charIdx = (x - 1) % 26;
+            name.push(String.fromCharCode(97 + charIdx));
+            x = Math.floor((x - 1) / 26);
+        }
+
+        return name.reverse().join('');
+    }
+
+    function condenseNames(namesList) {
+        if (!namesList.length) return [];
+
+        namesList.sort();
+
+        let condensed = [];
+        let prefix = [];
+        let suffixes = [];
+
+        for (let name of namesList) {
+            if (!prefix.length) {
+                prefix = [...name];
+                suffixes.push(prefix.pop());
+                continue;
+            }
+
+            let i = 0;
+            while (i < Math.min(name.length, prefix.length) && name[i] === prefix[i]) {
+                i++;
+            }
+
+            if (i === prefix.length) {
+                suffixes.push(name.slice(i));
+            } else {
+                let rangeString = prefix.join('') + '[' + suffixes[0] + '-' + suffixes[suffixes.length - 1] + ']';
+                rangeString += ` (${suffixes.length})`;
+                condensed = [rangeString, ...condensed];
+                prefix = [...name.slice(0, i)];
+                suffixes = [name.slice(i)];
+            }
+        }
+
+        if (suffixes.length) {
+            let rangeString = prefix.join('') + '[' + suffixes[0] + '-' + suffixes[suffixes.length - 1] + ']';
+            rangeString += ` (${suffixes.length})`;
+            condensed = [rangeString, ...condensed];
+        }
+        return condensed;
+    }
+
+
+    function extractRanges(inputString) {
+        let regex = /(\d+)\s*[-–]\s*(\d+)/g;
+        let matches = [];
+        let match;
+        while (match = regex.exec(inputString)) {
+            matches.push(match[1] + '–' + match[2]);
+        }
+        return matches;
+    }
+
+    function getNamespacesForString(inputString, callback) {
+        let ranges = extractRanges(inputString);
+        let result = {};
+
+        async function processRange(index) {
+            if (index >= ranges.length) {
+                callback(result);
+                return;
+            }
+
+
+
+
+            if (index >= ranges.length) {
+                callback(result);
+                return;
+            }
+
+            let range = ranges[index];
+            let [start, end] = range.split('–').map(Number);
+
+            if (end - start > 10000000) {
+                alert('range is over 10mil sats, so it might take a few seconds to load.');
+            }
+
+            let currentStart = start;
+            let currentEnd = Math.min(end, start + 9999999);
+
+            while (currentStart <= end) {
+                let names = [];
+                for (let i = currentStart; i <= currentEnd; i++) {
+                    names.push(satNumberToName(i));
+                }
+
+                let condensed = condenseNames(names);
+                let rangeData = [satNumberToName(currentStart), ...condensed, satNumberToName(currentEnd)].reverse();
+
+                let displayRange = `${currentStart}–${currentEnd}`;
+                result[displayRange] = {
+                    data: rangeData,
+                    totalCount: currentEnd - currentStart + 1
+                };
+
+                callback(result); // Update the UI with the current chunk
+
+                currentStart = currentEnd + 1;
+                currentEnd = Math.min(end, currentStart + 9999999);
+
+                await new Promise(resolve => setTimeout(resolve, 100)); // Short delay before processing the next chunk
+            }
+
+            processRange(index + 1);
+        }
+
+        processRange(0);
+    }
+
+    function nameToNum(name) {
+        let x = 0;
+        for (let i = 0; i < name.length; i++) {
+            x = x * 26 + (name.charCodeAt(i) - 96);
+        }
+        return SUPPLY - x;
+    }
+
+
+    const generateNames = (prefix, startChar, endChar) => {
+        let names = [];
+        let currentName = prefix + startChar;
+        let endName = prefix + endChar;
+
+        while (currentName <= endName) {
+            names.push(currentName);
+            let charIndex = currentName.length - 1;
+            while (charIndex >= 0) {
+                if (currentName[charIndex] !== 'z') {
+                    currentName = currentName.substring(0, charIndex) +
+                        String.fromCharCode(currentName.charCodeAt(charIndex) + 1) +
+                        currentName.substring(charIndex + 1);
+                    break;
+                } else {
+                    currentName = currentName.substring(0, charIndex) + 'a' + currentName.substring(charIndex + 1);
+                    charIndex--;
+                }
+            }
+            if (charIndex < 0) {
+                currentName = 'a' + currentName;
+            }
+        }
+
+        return names;
+    }
+</script>
+
+</html>
+
+
+
+
+
